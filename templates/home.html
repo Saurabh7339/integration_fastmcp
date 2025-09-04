@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Services MCP - Home</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            box-sizing: border-box;
+        }
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .service-card {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        .service-card:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        .service-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.3em;
+        }
+        .service-card p {
+            margin: 0;
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        .service-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        .username-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .info-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        .dashboard-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .dashboard-link a {
+            color: #fff;
+            text-decoration: none;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: background 0.3s ease;
+        }
+        .dashboard-link a:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Google Services MCP</h1>
+        
+        <div class="username-section">
+            <h2>👤 Enter Your Username</h2>
+            <p>This will create or use an existing workspace for your Google service integrations.</p>
+            
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" placeholder="Enter your username (e.g., john_doe, company_name)" required>
+            </div>
+        </div>
+
+        <h2>🔐 Choose a Service to Authenticate</h2>
+        <p>Select which Google service you want to connect to your workspace:</p>
+        
+        <div class="services-grid">
+            <div class="service-card" onclick="authenticateService('gmail')">
+                <div class="service-icon">📧</div>
+                <h3>Gmail</h3>
+                <p>Access and manage your emails</p>
+                <small>Scopes: gmail.modify</small>
+            </div>
+            
+            <div class="service-card" onclick="authenticateService('drive')">
+                <div class="service-icon">📁</div>
+                <h3>Google Drive</h3>
+                <p>Manage files and folders</p>
+                <small>Scopes: drive</small>
+            </div>
+            
+            <div class="service-card" onclick="authenticateService('docs')">
+                <div class="service-icon">📝</div>
+                <h3>Google Docs</h3>
+                <p>Create and edit documents</p>
+                <small>Scopes: documents</small>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <strong>ℹ️ How it works:</strong>
+            <ul>
+                <li>Enter a username to create/use a workspace</li>
+                <li>Click on any service to start OAuth authentication</li>
+                <li>Complete Google OAuth for that specific service</li>
+                <li>Your credentials are stored securely in SQLite database</li>
+                <li>Each service has separate OAuth tokens and scopes</li>
+            </ul>
+        </div>
+
+        <div class="dashboard-link">
+            <a href="#" onclick="goToDashboard()">📊 View Your Dashboard</a>
+        </div>
+    </div>
+
+    <script>
+        function authenticateService(service) {
+            const username = document.getElementById('username').value.trim();
+            
+            if (!username) {
+                alert('Please enter a username first!');
+                return;
+            }
+            
+            // Store username in sessionStorage for later use
+            sessionStorage.setItem('currentUsername', username);
+            
+            // Redirect to service-specific OAuth
+            window.location.href = `/auth/${service}?username=${encodeURIComponent(username)}`;
+        }
+        
+        function goToDashboard() {
+            const username = document.getElementById('username').value.trim();
+            
+            if (!username) {
+                alert('Please enter a username first!');
+                return;
+            }
+            
+            window.location.href = `/dashboard/${encodeURIComponent(username)}`;
+        }
+        
+        // Auto-fill username if available
+        window.onload = function() {
+            const savedUsername = sessionStorage.getItem('currentUsername');
+            if (savedUsername) {
+                document.getElementById('username').value = savedUsername;
+            }
+        };
+    </script>
+</body>
+</html>
