@@ -6,14 +6,15 @@ import os
 import json
 from config import Config
 
-# Database configuration - Using SQLite
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./fastmcp.db")
+# Database configuration - Using PostgreSQL
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+psycopg2://postgres:postgres@localhost:5433/oneplace_core")
 
-# Create engine - SQLite specific configuration
+# Create engine - PostgreSQL configuration
 engine = create_engine(
     DATABASE_URL,
     echo=False,  # Set to True for SQL query logging
-    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
+    pool_pre_ping=True,  # Enable connection health checks
+    pool_recycle=300,    # Recycle connections every 5 minutes
 )
 
 # Create session factory
@@ -58,14 +59,38 @@ def get_workspace_by_name(name: str) -> Optional[dict]:
         session.close()
 
 def create_workspace(name: str) -> Optional[dict]:
-    """Create a new workspace"""
+    """Create a new workspace using ORM approach"""
     session = get_db_session()
     try:
+        from uuid import UUID
         from models.workspace import Workspace
-        workspace = Workspace(name=name)
+        
+        # Default UUIDs from existing database records
+        default_org_id = UUID("c8306f9d-c97c-4ded-9a38-31f79eab656c")
+        default_user_id = UUID("d1e7a429-402b-430e-8f7d-a168acca1a9a")
+        default_llm_provider_id = UUID("2d6fd83e-5757-4887-ada7-b7ad247f117b")
+        default_embedding_provider_id = UUID("d9aa74b6-3216-4d7f-9af6-8e4d540f83ff")
+        default_llm_model_id = UUID("aee1ba0e-f272-40b3-be76-f470ece04952")
+        default_embedding_model_id = UUID("b27f2676-b225-4bb4-b77d-9e1d27c40005")
+        
+        # Create workspace using ORM with all required fields
+        workspace = Workspace(
+            name=name,
+            description="Default workspace description",
+            default_llm_provider=default_llm_provider_id,
+            default_embedding_provider=default_embedding_provider_id,
+            default_embedding_model=default_embedding_model_id,
+            default_llm_model=default_llm_model_id,
+            is_active=True,
+            is_public=False,
+            organization_id=default_org_id,
+            created_by_id=default_user_id
+        )
+        
         session.add(workspace)
         session.commit()
         session.refresh(workspace)
+        
         return {
             "id": str(workspace.id),
             "name": workspace.name

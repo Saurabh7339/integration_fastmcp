@@ -7,6 +7,7 @@ from auth.oauth import GoogleOAuth
 from database import create_tables, get_db_session, create_workspace, get_workspace_by_name
 from config import Config
 from uuid import UUID
+from typing import Optional
 import json
 import base64
 
@@ -103,9 +104,9 @@ async def auth_page(request: Request, service: str, username: str):
 @app.get("/google/callback")
 async def oauth_callback(
     code: str = Query(...),
-    state: str | None = Query(None),
-    # username: str | None = Query(None),
-    # service: str | None = Query(None),
+    state: Optional[str] = Query(None),
+    # username: Optional[str] = Query(None),
+    # service: Optional[str] = Query(None),
 ):
     """OAuth callback handler - unique path to avoid conflicts"""
     try:
@@ -270,4 +271,4 @@ if __name__ == "__main__":
     print("🔐 Available services:", ", ".join(SERVICES))
     print("⚠️  Make sure to set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables")
     print("⚠️  IMPORTANT: Configure Google OAuth app with redirect URI: http://localhost:8000/auth/callback")
-    uvicorn.run(app, host=Config.HOST, port=Config.PORT)
+    uvicorn.run(app, host=Config.HOST, port=8022)

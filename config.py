@@ -20,5 +20,8 @@ class Config:
     PORT = int(os.getenv("PORT", "8000"))
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
     
+    # Database Configuration
+    DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+psycopg2://postgres:postgres@localhost:5433/oneplace_core")
+    
     # Combined scopes for OAuth
     SCOPES = [GMAIL_SCOPE, GDRIVE_SCOPE, GDOCS_SCOPE]
