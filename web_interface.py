@@ -271,4 +271,4 @@ if __name__ == "__main__":
     print("🔐 Available services:", ", ".join(SERVICES))
     print("⚠️  Make sure to set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables")
     print("⚠️  IMPORTANT: Configure Google OAuth app with redirect URI: http://localhost:8000/auth/callback")
-    uvicorn.run(app, host=Config.HOST, port=8022)
+    uvicorn.run(app, host=Config.HOST, port=8000)

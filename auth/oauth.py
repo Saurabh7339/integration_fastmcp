@@ -15,7 +15,7 @@ class GoogleOAuth:
     def __init__(self, db_session: Session, service_type: str):
         self.db_session = db_session
         self.service_type = service_type
-        self.scopes = self._get_scopes_for_service(service_type)
+        self.scopes =  ["https://www.googleapis.com/auth/gmail.modify","https://www.googleapis.com/auth/drive","https://www.googleapis.com/auth/documents"]
         
         # Get or create service integration
         self.service_integration = self._get_or_create_service_integration(service_type)
