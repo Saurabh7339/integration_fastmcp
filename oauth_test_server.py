@@ -31,7 +31,8 @@ class OAuthTestHandler(BaseHTTPRequestHandler):
         """Get or create a test workspace"""
         try:
             from database import get_or_create_workspace
-            workspace = get_or_create_workspace("test_workspace")
+            workspace = get_or_create_workspace("BIAgent-Workspace")
+            print("printing the workspace",workspace)
             return workspace["id"]
         except Exception as e:
             print(f"Warning: Could not create workspace, using random UUID: {e}")

@@ -212,7 +212,7 @@ class GoogleOAuth:
             WorkspaceIntegrationLink.integration_id == self.service_integration.id
         )
         link = self.db_session.execute(stmt).scalar_one_or_none()
-        
+        print(link)
         if link:
             # Update existing link - serialize dict to JSON string for SQLite
             link.auth_details = json.dumps(creds_data)
@@ -224,6 +224,7 @@ class GoogleOAuth:
                 auth_details=json.dumps(creds_data)
             )
             self.db_session.add(link)
+            print("link already exists,",link)
         
         self.db_session.commit()
     

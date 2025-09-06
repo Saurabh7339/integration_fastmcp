@@ -50,10 +50,12 @@ def get_workspace_by_name(name: str) -> Optional[dict]:
         from models.workspace import Workspace
         workspace = session.query(Workspace).filter(Workspace.name == name).first()
         if workspace:
+            print("testing the workspace",workspace)
             return {
                 "id": str(workspace.id),
                 "name": workspace.name
             }
+        
         return None
     finally:
         session.close()
@@ -109,10 +111,11 @@ def get_or_create_workspace(name: str) -> Optional[dict]:
         existing_workspace = get_workspace_by_name(name)
         if existing_workspace:
             return existing_workspace
+        return None
         
         # Create new workspace
         new_workspace = create_workspace(name)
-        return new_workspace
+        # return new_workspace
     finally:
         session.close()
 
@@ -126,14 +129,23 @@ def get_or_create_service_integration(service_type: str) -> Optional[dict]:
         integration = session.query(Integration).filter(Integration.name == service_name).first()
         
         if not integration:
-            integration = Integration(name=service_name)
+            # Set default ports for Google services
+            default_ports = {
+                "gmail": 993,  # IMAP SSL
+                "drive": 443,  # HTTPS
+                "docs": 443    # HTTPS
+            }
+            port = default_ports.get(service_type.lower(), None)
+            
+            integration = Integration(name=service_name, port=port)
             session.add(integration)
             session.commit()
             session.refresh(integration)
         
         return {
             "id": str(integration.id),
-            "name": integration.name
+            "name": integration.name,
+            "port": integration.port
         }
     except Exception as e:
         session.rollback()

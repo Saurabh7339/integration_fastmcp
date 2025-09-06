@@ -136,7 +136,7 @@ async def oauth_callback(
             tokens = oauth.exchange_code_for_tokens(code, UUID(workspace["id"]))
             
             # Redirect to success page
-            return RedirectResponse(url=f"/success?success=true&service={final_service}&username={final_username}")
+            return RedirectResponse(url="https://app.speakmulti.com/workspace")
             
         finally:
             db_session.close()

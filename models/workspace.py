@@ -2,8 +2,8 @@ from datetime import datetime
 from typing import List, TYPE_CHECKING, Optional
 from uuid import UUID, uuid4
 from sqlmodel import Field, Relationship, SQLModel
-from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Boolean
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB
+from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Boolean, Integer
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB, INTEGER
 
 if TYPE_CHECKING:
     from .workspace import WorkspaceIntegrationLink
@@ -45,6 +45,10 @@ class Integration(SQLModel, table=True):
         sa_column=Column(PG_UUID(as_uuid=True), primary_key=True, unique=True, nullable=False)
     )
     name: str = Field(nullable=False)
+    port: Optional[int] = Field(
+        default=None,
+        sa_column=Column(INTEGER, nullable=True)
+    )
     
     workspaces: List["WorkspaceIntegrationLink"] = Relationship(back_populates="integration")
 

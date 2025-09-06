@@ -157,6 +157,8 @@ async def oauth_initiate(request: OAuthInitiateRequest):
         
         # Get or create workspace
         workspace = get_or_create_workspace(request.username)
+        if workspace is None:
+            raise HTTPException(status_code=400, detail="Workspace not found")
         
         # Initialize OAuth for the specific service
         db_session = get_db_session()
@@ -183,7 +185,7 @@ async def oauth_initiate(request: OAuthInitiateRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/oauth/callback")
+@app.get("/google/callback")
 async def oauth_callback(
     code: str = Query(...),
     state: Optional[str] = Query(None)
@@ -210,15 +212,16 @@ async def oauth_callback(
             oauth = GoogleOAuth(db_session, service_from_state)
             tokens = oauth.exchange_code_for_tokens(code, UUID(workspace["id"]))
             
-            return {
-                "success": True,
-                "workspace_id": workspace["id"],
-                "username": username_from_state,
-                "service": service_from_state,
-                "message": f"Successfully authenticated with {service_from_state}",
-                "tokens_received": bool(tokens and not tokens.get("error")),
-                "redirect_url": f"/oauth-success?service={service_from_state}&username={username_from_state}"
-            }
+            # return {
+            #     "success": True,
+            #     "workspace_id": workspace["id"],
+            #     "username": username_from_state,
+            #     "service": service_from_state,
+            #     "message": f"Successfully authenticated with {service_from_state}",
+            #     "tokens_received": bool(tokens and not tokens.get("error")),
+            #     "redirect_url": f"/oauth-success?service={service_from_state}&username={username_from_state}"
+            # }
+            return RedirectResponse(url="https://app.speakmultiapp.com")
             
         finally:
             db_session.close()
