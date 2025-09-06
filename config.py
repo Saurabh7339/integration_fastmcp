@@ -1,8 +1,12 @@
 import os
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from .env file if available
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # dotenv not available, use environment variables directly
+    pass
 
 class Config:
     # Google OAuth Configuration - Multiple Client Support
@@ -22,7 +26,7 @@ class Config:
     GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
     GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
     
-    GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/google/callback")
+    GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8080/google/callback")
     
     # Google API Scopes
     GMAIL_SCOPE = os.getenv("GMAIL_SCOPE", "https://www.googleapis.com/auth/gmail.modify")
@@ -41,7 +45,7 @@ class Config:
     SCOPES = [GMAIL_SCOPE, GDRIVE_SCOPE, GDOCS_SCOPE]
     
     @classmethod
-    def get_client_credentials(cls, service_type: str) -> tuple[str, str]:
+    def get_client_credentials(cls, service_type: str):
         """
         Get client_id and client_secret for a specific service type.
         
@@ -49,7 +53,7 @@ class Config:
             service_type: The service type ('gmail', 'drive', 'docs')
             
         Returns:
-            tuple: (client_id, client_secret)
+            tuple of (client_id, client_secret)
             
         Raises:
             ValueError: If no credentials are found for the service

@@ -10,12 +10,17 @@ from uuid import UUID
 from sqlmodel import create_engine, Session, select
 from models.workspace import Workspace, WorkspaceIntegrationLink
 
-def clear_credentials_for_workspace(workspace_id: str, db_url: str = "sqlite:///test.db"):
+def clear_credentials_for_workspace(workspace_id: str, db_url: str = None):
     """Clear all Google service credentials for a workspace"""
     try:
-        # Create database connection
-        engine = create_engine(db_url)
-        session = Session(engine)
+        # Use PostgreSQL database configuration
+        if db_url is None:
+            from database import get_db_session
+            session = get_db_session()
+        else:
+            # Create database connection for custom URL
+            engine = create_engine(db_url)
+            session = Session(engine)
         
         # Convert string to UUID
         workspace_uuid = UUID(workspace_id)
@@ -39,7 +44,8 @@ def clear_credentials_for_workspace(workspace_id: str, db_url: str = "sqlite:///
                 removed_count += 1
         
         session.commit()
-        session.close()
+        if db_url is not None:  # Only close if we created the session
+            session.close()
         
         print(f"Successfully cleared {removed_count} Google service credentials for workspace {workspace_id}")
         print("You can now re-authorize with the new scopes.")
@@ -49,11 +55,17 @@ def clear_credentials_for_workspace(workspace_id: str, db_url: str = "sqlite:///
         print(f"Error clearing credentials: {e}")
         return False
 
-def list_workspaces(db_url: str = "sqlite:///test.db"):
+def list_workspaces(db_url: str = None):
     """List all workspaces in the database"""
     try:
-        engine = create_engine(db_url)
-        session = Session(engine)
+        # Use PostgreSQL database configuration
+        if db_url is None:
+            from database import get_db_session
+            session = get_db_session()
+        else:
+            # Create database connection for custom URL
+            engine = create_engine(db_url)
+            session = Session(engine)
         
         stmt = select(Workspace)
         workspaces = session.execute(stmt).scalars().all()
@@ -66,7 +78,8 @@ def list_workspaces(db_url: str = "sqlite:///test.db"):
         for workspace in workspaces:
             print(f"  - ID: {workspace.id}, Name: {workspace.name}")
         
-        session.close()
+        if db_url is not None:  # Only close if we created the session
+            session.close()
         
     except Exception as e:
         print(f"Error listing workspaces: {e}")
@@ -80,7 +93,7 @@ def main():
         return
     
     command = sys.argv[1]
-    db_url = os.getenv("DATABASE_URL", "sqlite:///test.db")
+    db_url = os.getenv("DATABASE_URL", None)  # Use PostgreSQL by default
     
     if command == "list":
         list_workspaces(db_url)
@@ -92,8 +105,14 @@ def main():
         clear_credentials_for_workspace(workspace_id, db_url)
     elif command == "clear-all":
         try:
-            engine = create_engine(db_url)
-            session = Session(engine)
+            # Use PostgreSQL database configuration
+            if db_url is None:
+                from database import get_db_session
+                session = get_db_session()
+            else:
+                # Create database connection for custom URL
+                engine = create_engine(db_url)
+                session = Session(engine)
             
             # Remove all Google service credentials
             stmt = select(WorkspaceIntegrationLink)
@@ -106,7 +125,8 @@ def main():
                     removed_count += 1
             
             session.commit()
-            session.close()
+            if db_url is not None:  # Only close if we created the session
+                session.close()
             
             print(f"Successfully cleared {removed_count} Google service credentials")
             print("You can now re-authorize with the new scopes.")

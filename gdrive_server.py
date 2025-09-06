@@ -142,39 +142,46 @@ class GoogleDriveMCPServer:
             except ValueError:
                 return {"error": "Invalid workspace_id format"}
     
-    async def start(self):
-        """Start the MCP server"""
-        await self.mcp.start()
+    def get_tools(self):
+        """Get all registered tools"""
+        return self.mcp.get_tools()
     
-    async def stop(self):
-        """Stop the MCP server"""
-        await self.mcp.stop()
+    def get_tool_descriptions(self):
+        """Get descriptions for all tools"""
+        return self.mcp.get_tool_descriptions()
+    
+    def call_tool(self, tool_name: str, *args, **kwargs):
+        """Call a specific tool by name"""
+        return self.mcp.call_tool(tool_name, *args, **kwargs)
 
 if __name__ == "__main__":
-    # For demonstration, create a dummy database session
-    from sqlmodel import create_engine, Session
-    from uuid import uuid4
-    engine = create_engine("sqlite:///test.db")
+    # Use PostgreSQL database configuration
+    from database import get_db_session, create_tables
+    from config import Config
     
-    # Create tables
-    from sqlmodel import SQLModel
-    SQLModel.metadata.create_all(engine)
+    # Create tables if they don't exist
+    # create_tables()
     
-    # Create a test workspace with all required fields
-    session = Session(engine)
-    # workspace = Workspace(
-    #     name="Test Drive Workspace",
-    #     description="Test workspace for Google Drive",
-    #     default_llm_provider=uuid4(),
-    #     default_embedding_provider=uuid4(),
-    #     default_embedding_model=uuid4(),
-    #     default_llm_model=uuid4(),
-    #     organization_id=uuid4(),
-    #     created_by_id=uuid4()
-    # )
-    # session.add(workspace)
-    # session.commit()
-    # session.refresh(workspace)
+    # Get database session
+    session = get_db_session()
     
-    server = GoogleDriveMCPServer(session)
-    asyncio.run(server.start())
+    try:
+        server = GoogleDriveMCPServer(session)
+        
+        # Display available tools
+        print("Google Drive MCP Server")
+        print("=" * 25)
+        print("Available tools:")
+        tools = server.get_tools()
+        for tool_name, tool_func in tools.items():
+            print(f"  - {tool_name}")
+        
+        print("\nTool descriptions:")
+        descriptions = server.get_tool_descriptions()
+        for tool_name, description in descriptions.items():
+            print(f"  {tool_name}: {description}")
+        
+        print("\nServer ready. Use the tools through the MCP interface.")
+        
+    finally:
+        session.close()
