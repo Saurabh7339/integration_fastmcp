@@ -382,10 +382,25 @@ if __name__ == "__main__":
     # For demonstration, create a dummy database session
     from models.workspace import Workspace
     from sqlmodel import create_engine, Session
+    from uuid import uuid4
     engine = create_engine("sqlite:///test.db")
-    Session.bind = engine
-    workspace = Workspace(name="Test Workspace")
-    session = Session()
+    
+    # Create tables
+    from sqlmodel import SQLModel
+    SQLModel.metadata.create_all(engine)
+    
+    # Create a test workspace with all required fields
+    session = Session(engine)
+    workspace = Workspace(
+        name="Test Workspace",
+        description="Test workspace for Google Services",
+        default_llm_provider=uuid4(),
+        default_embedding_provider=uuid4(),
+        default_embedding_model=uuid4(),
+        default_llm_model=uuid4(),
+        organization_id=uuid4(),
+        created_by_id=uuid4()
+    )
     session.add(workspace)
     session.commit()
     session.refresh(workspace)

@@ -128,6 +128,19 @@ class GoogleDriveMCPServer:
                 return drive_service.search_files(query, page_size)
             except ValueError:
                 return [{"error": "Invalid workspace_id format"}]
+        
+        @self.mcp.tool()
+        def clear_google_credentials(workspace_id: str) -> Dict[str, Any]:
+            """Clear all Google service credentials for a workspace (useful when scopes change)"""
+            try:
+                workspace_uuid = UUID(workspace_id)
+                success = self.drive_oauth.clear_all_credentials_for_workspace(workspace_uuid)
+                if success:
+                    return {"success": True, "message": "All Google credentials cleared. Re-authorization required."}
+                else:
+                    return {"error": "Failed to clear credentials"}
+            except ValueError:
+                return {"error": "Invalid workspace_id format"}
     
     async def start(self):
         """Start the MCP server"""
@@ -140,15 +153,28 @@ class GoogleDriveMCPServer:
 if __name__ == "__main__":
     # For demonstration, create a dummy database session
     from sqlmodel import create_engine, Session
+    from uuid import uuid4
     engine = create_engine("sqlite:///test.db")
-    Session.bind = engine
     
-    # Create a test workspace
-    session = Session()
-    workspace = Workspace(name="Test Drive Workspace")
-    session.add(workspace)
-    session.commit()
-    session.refresh(workspace)
+    # Create tables
+    from sqlmodel import SQLModel
+    SQLModel.metadata.create_all(engine)
+    
+    # Create a test workspace with all required fields
+    session = Session(engine)
+    # workspace = Workspace(
+    #     name="Test Drive Workspace",
+    #     description="Test workspace for Google Drive",
+    #     default_llm_provider=uuid4(),
+    #     default_embedding_provider=uuid4(),
+    #     default_embedding_model=uuid4(),
+    #     default_llm_model=uuid4(),
+    #     organization_id=uuid4(),
+    #     created_by_id=uuid4()
+    # )
+    # session.add(workspace)
+    # session.commit()
+    # session.refresh(workspace)
     
     server = GoogleDriveMCPServer(session)
     asyncio.run(server.start())

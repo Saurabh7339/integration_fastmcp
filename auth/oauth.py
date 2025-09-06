@@ -15,19 +15,18 @@ class GoogleOAuth:
     def __init__(self, db_session: Session, service_type: str):
         self.db_session = db_session
         self.service_type = service_type
-        self.scopes =  ["https://www.googleapis.com/auth/gmail.modify","https://www.googleapis.com/auth/drive","https://www.googleapis.com/auth/documents"]
+        self.scopes =  self._get_scopes_for_service(service_type)
         
         # Get or create service integration
         self.service_integration = self._get_or_create_service_integration(service_type)
         
-        # OAuth configuration
-        self.client_id = os.getenv("GOOGLE_CLIENT_ID")
-        self.client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
+        # OAuth configuration - Get service-specific credentials
+        from config import Config
+        self.client_id, self.client_secret = Config.get_client_credentials(service_type)
         # Use the exact callback route that matches our web interface
-        self.redirect_uri = "http://localhost:8000/google/callback"
-        
-        if not self.client_id or not self.client_secret:
-            raise ValueError("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set in environment variables")
+        self.redirect_uri = Config.GOOGLE_REDIRECT_URI
+
+        print(f"OAuth configuration - Client ID: {self.client_id}, Client Secret: {self.client_secret}, Redirect URI: {self.redirect_uri}")
     
     def _get_scopes_for_service(self, service_type: str) -> list:
         """Get the appropriate scopes for a specific service"""
@@ -42,7 +41,7 @@ class GoogleOAuth:
         """Get or create integration for a specific service"""
         from models.workspace import Integration
         
-        service_name = f"Google {service_type.title()}"
+        service_name = f"{service_type}"
         
         # Use SQLAlchemy query instead of SQLModel exec
         stmt = select(Integration).where(Integration.name == service_name)
@@ -162,6 +161,15 @@ class GoogleOAuth:
         else:
             auth_details = link.auth_details
         
+        # Check if stored scopes match current scopes
+        stored_scopes = auth_details.get('scopes', [])
+        if set(stored_scopes) != set(self.scopes):
+            # Scopes have changed, need to re-authorize
+            print(f"Scope mismatch detected. Stored: {stored_scopes}, Current: {self.scopes}")
+            print("Clearing existing credentials. Re-authorization required.")
+            self._remove_credentials(workspace_id)
+            return None
+        
         # Create credentials object
         credentials = Credentials(
             token=auth_details.get('token'),
@@ -251,6 +259,29 @@ class GoogleOAuth:
             return True
             
         except Exception:
+            return False
+    
+    def clear_all_credentials_for_workspace(self, workspace_id: UUID) -> bool:
+        """Clear all Google service credentials for a workspace (useful for scope changes)"""
+        try:
+            from models.workspace import WorkspaceIntegrationLink
+            
+            # Find all Google service integrations for this workspace
+            stmt = select(WorkspaceIntegrationLink).where(
+                WorkspaceIntegrationLink.workspace_id == workspace_id
+            )
+            links = self.db_session.execute(stmt).scalars().all()
+            
+            # Remove all Google service credentials
+            for link in links:
+                if link.integration.name.startswith("Google"):
+                    self.db_session.delete(link)
+            
+            self.db_session.commit()
+            return True
+            
+        except Exception as e:
+            print(f"Error clearing credentials: {e}")
             return False
     
     def get_workspace_credentials_status(self, workspace_id: UUID) -> Dict[str, Any]:
