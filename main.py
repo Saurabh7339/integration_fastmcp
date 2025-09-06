@@ -4,6 +4,7 @@ Main API server for Google Services MCP OAuth Integration
 Provides end-to-end OAuth flow through REST APIs
 """
 
+import traceback
 from fastapi import FastAPI, HTTPException, Depends, Query, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -49,7 +50,7 @@ class WorkspaceCreate(BaseModel):
     name: str
 
 class OAuthInitiateRequest(BaseModel):
-    username: str
+    workspace_id: UUID
     service: str  # gmail, drive, or docs
 
 class OAuthCallbackRequest(BaseModel):
@@ -156,7 +157,7 @@ async def oauth_initiate(request: OAuthInitiateRequest):
             raise HTTPException(status_code=400, detail=f"Invalid service. Must be one of: {SERVICES}")
         
         # Get or create workspace
-        workspace = get_or_create_workspace(request.username)
+        workspace = get_or_create_workspace(request.workspace_id)
         if workspace is None:
             raise HTTPException(status_code=400, detail="Workspace not found")
         
@@ -166,23 +167,29 @@ async def oauth_initiate(request: OAuthInitiateRequest):
             oauth = GoogleOAuth(db_session, request.service)
             
             # Get the authorization URL with username and service encoded in state
-            auth_url = oauth.get_authorization_url(username=request.username, service=request.service)
+            auth_url = oauth.get_authorization_url(username=str(request.workspace_id), service=request.service)
+            
+            # Create redirect URL for easy OAuth flow
+            redirect_url = f"/oauth/redirect?authorization_url={auth_url.replace('&', '%26')}"
             
             return {
                 "success": True,
                 "workspace_id": workspace["id"],
-                "username": request.username,
+                "username": str(request.workspace_id),
                 "service": request.service,
                 "authorization_url": auth_url,
-                "state": encode_state(request.username, request.service),
+                "redirect_url": redirect_url,
+                "state": encode_state(str(request.workspace_id), request.service),
                 "message": f"OAuth flow initiated for {request.service}"
             }
         finally:
             db_session.close()
             
     except HTTPException:
+        traceback.print_exc()
         raise
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/google/callback")
@@ -221,7 +228,7 @@ async def oauth_callback(
             #     "tokens_received": bool(tokens and not tokens.get("error")),
             #     "redirect_url": f"/oauth-success?service={service_from_state}&username={username_from_state}"
             # }
-            return RedirectResponse(url="https://app.speakmultiapp.com")
+            return RedirectResponse(url="https://app.speakmulti.com")
             
         finally:
             db_session.close()
@@ -354,6 +361,20 @@ async def test_service(request: ServiceTestRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 # Health Check API
+@app.get("/oauth/redirect")
+async def oauth_redirect(authorization_url: str = Query(...)):
+    """Redirect to OAuth authorization URL"""
+    try:
+        # Validate that the URL is a Google OAuth URL for security
+        if not authorization_url.startswith("https://accounts.google.com/o/oauth2/auth"):
+            raise HTTPException(status_code=400, detail="Invalid authorization URL")
+        
+        return RedirectResponse(url=authorization_url)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint"""

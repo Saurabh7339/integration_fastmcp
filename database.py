@@ -48,7 +48,7 @@ def get_workspace_by_name(name: str) -> Optional[dict]:
     session = get_db_session()
     try:
         from models.workspace import Workspace
-        workspace = session.query(Workspace).filter(Workspace.name == name).first()
+        workspace = session.query(Workspace).filter(Workspace.id == name).first()
         if workspace:
             print("testing the workspace",workspace)
             return {
