@@ -192,7 +192,7 @@ async def oauth_initiate(request: OAuthInitiateRequest):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/google/callback")
+@app.get("/api/google/callback")
 async def oauth_callback(
     code: str = Query(...),
     state: Optional[str] = Query(None)
@@ -212,6 +212,8 @@ async def oauth_callback(
         
         # Get or create workspace
         workspace = get_or_create_workspace(username_from_state)
+        if workspace is None:
+            raise HTTPException(status_code=400, detail="Workspace not found")
         
         # Initialize OAuth for the specific service
         db_session = get_db_session()

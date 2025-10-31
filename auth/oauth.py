@@ -144,13 +144,15 @@ class GoogleOAuth:
         from models.workspace import WorkspaceIntegrationLink
         
         # Get credentials from database
+        print(f"workspace_id: {workspace_id} {self.service_integration.id}")
         stmt = select(WorkspaceIntegrationLink).where(
             WorkspaceIntegrationLink.workspace_id == workspace_id,
             WorkspaceIntegrationLink.integration_id == self.service_integration.id
         )
         link = self.db_session.execute(stmt).scalar_one_or_none()
-        
         if not link or not link.auth_details:
+            print(f"No credentials found for workspace {workspace_id}")
+            print(f"link: {link}")
             return None
         
         # Parse auth_details (handle both dict and JSON string for SQLite)
@@ -158,6 +160,7 @@ class GoogleOAuth:
             try:
                 auth_details = json.loads(link.auth_details)
             except json.JSONDecodeError:
+                print(f"JSON decode error for workspace {workspace_id}")
                 return None
         else:
             auth_details = link.auth_details
@@ -187,8 +190,29 @@ class GoogleOAuth:
                 credentials.refresh(Request())
                 # Save refreshed credentials
                 self._save_credentials(workspace_id, credentials)
-            except RefreshError:
+            except RefreshError as e:
                 # Refresh failed, remove invalid credentials
+                print(f"Token refresh failed for workspace {workspace_id}: {e}")
+                self._remove_credentials(workspace_id)
+                return None
+            except Exception as e:
+                # Handle other OAuth errors (like invalid_grant)
+                print(f"OAuth error for workspace {workspace_id}: {e}")
+                self._remove_credentials(workspace_id)
+                return None
+        
+        # Additional check: Test if token actually works even if not expired
+        # This handles cases where the token is revoked but not expired
+        if not credentials.expired and credentials.refresh_token:
+            try:
+                # Test the token by attempting to refresh it anyway
+                # This will succeed if the token is valid, or fail if it's revoked
+                credentials.refresh(Request())
+                # If refresh succeeded, save the potentially updated credentials
+                self._save_credentials(workspace_id, credentials)
+            except Exception as e:
+                # Token is invalid or revoked, remove it
+                print(f"Token validation failed for workspace {workspace_id}: {e}")
                 self._remove_credentials(workspace_id)
                 return None
         
@@ -306,19 +330,35 @@ class GoogleOAuth:
             else:
                 auth_details = link.auth_details
             
+            # Check if credentials are actually valid
+            is_valid = False
+            error_message = None
+            
+            try:
+                # Try to get valid credentials (this will test if they work)
+                valid_creds = self.get_valid_credentials(workspace_id)
+                is_valid = valid_creds is not None
+            except Exception as e:
+                error_message = str(e)
+                is_valid = False
+            
             return {
                 "has_credentials": True,
+                "is_valid": is_valid,
                 "service_type": self.service_type,
                 "integration_id": str(self.service_integration.id),
                 "integration_name": self.service_integration.name,
                 "created_date": link.created_date.isoformat() if link.created_date else None,
                 "scopes": auth_details.get('scopes', []),
-                "expires_at": auth_details.get('expiry')
+                "expires_at": auth_details.get('expiry'),
+                "error": error_message
             }
         else:
             return {
                 "has_credentials": False,
+                "is_valid": False,
                 "service_type": self.service_type,
                 "integration_id": str(self.service_integration.id),
-                "integration_name": self.service_integration.name
+                "integration_name": self.service_integration.name,
+                "error": "No credentials found"
             }

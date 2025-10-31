@@ -16,33 +16,29 @@ parts/
 sdist/
 var/
 wheels/
+pip-wheel-metadata/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
 MANIFEST
 
 # Virtual Environment
-env/
 venv/
+env/
 ENV/
 env.bak/
 venv.bak/
 
-# Environment Variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# PyCharm
+.idea/
+*.iml
+*.iws
+.idea_modules/
 
-# OAuth Credentials & Secrets
-credentials/
-*.json
-*.pem
-*.key
-*.crt
-*.p12
-*.pfx
+# VS Code
+.vscode/
+*.code-workspace
 
 # Database
 *.db
@@ -50,16 +46,17 @@ credentials/
 *.sqlite3
 fastmcp.db
 
+# Environment variables
+.env
+.env.local
+.env.backup
+.env.*.local
+
 # Logs
 *.log
 logs/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+nohup.out
+nohup_*.out
 
 # OS
 .DS_Store
@@ -69,24 +66,17 @@ logs/
 .Trashes
 ehthumbs.db
 Thumbs.db
+*~
 
-# Temporary files
-*.tmp
-*.temp
-*.bak
-*.backup
-
-# Test coverage
+# Testing
+.pytest_cache/
+.coverage
 htmlcov/
 .tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
+.nox/
 coverage.xml
 *.cover
 .hypothesis/
-.pytest_cache/
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -94,30 +84,31 @@ coverage.xml
 # pyenv
 .python-version
 
-# pipenv
-Pipfile.lock
+# Credentials and secrets
+*credentials*.json
+*client_secret*.json
+token.json
+*.pem
+*.key
 
-# PEP 582
-__pypackages__/
+# OAuth tokens
+oauth_tokens/
 
-# Celery
-celerybeat-schedule
-celerybeat.pid
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
 
-# SageMath parsed files
-*.sage.py
+# Shell scripts output
+*.out
 
-# Spyder project settings
-.spyderproject
-.spyproject
+# Documentation build
+docs/_build/
+site/
 
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
+# MyPy
 .mypy_cache/
 .dmypy.json
 dmypy.json
@@ -125,6 +116,13 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# OAuth specific
-auth_tokens.json
-token_cache.json
+# Backup files
+*.bak
+*.backup
+
+# Application specific
+# setup_oauth.py
+# clear_credentials.py
+# update_credentials.py
+# fix_oauth_tokens.py
+# setup_integration_ports.py
